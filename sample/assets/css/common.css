@@ -1,0 +1,262 @@
+div.ellipsis, td.ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#sub-comm {
+	cursor: help;
+	border-bottom: 1px dotted #777;
+}
+
+.tooltip-inner {
+	white-space: pre-wrap;
+	white-space: -moz-pre-wrap;
+	white-space: -pre-wrap;
+	white-space: -o-pre-wrap;
+	word-wrap: break-word;
+}
+
+.highlight {
+	background-color: yellow;
+}
+
+/*.handsontableInput {
+	padding-top: 0px;
+}
+
+.handsontableInput:focus {
+	border: 2px solid #5292F7;
+}*/
+
+.scrollable-menu {
+    height: auto;
+    max-height: 200px;
+    overflow-x: hidden;
+}
+
+.handsontable .currentRow {
+    background-color: #E7E8EF !important;
+}
+
+.handsontable .currentCol {
+    background-color: #F9F9FB !important;
+}
+
+#emp-display-expat-page {
+	text-align: center;
+}
+
+.ui-datepicker-inline {
+	width: 100%;
+}
+
+#webcam {
+	margin-right: 8px;
+}
+
+.gritter-center {
+	position: fixed !important;
+}
+
+.gritter-close {
+	left: auto !important;
+}
+
+.editableform-loading {
+	background: none !important;
+	text-align: center;
+}
+
+.ace-nav .nav-user-photo {
+	width: 40px;
+	height: 40px;
+}
+
+.indeterminate:before {
+	content: "\f0c8" !important;
+}
+
+.tr-selected > td {
+	background-color: #D9EDF7 !important;
+}
+
+#multiple-edit-menu {
+	
+}
+
+#ui-datepicker-div {
+	z-index: 1051 !important;
+}
+
+#expat-extended-table {
+	overflow: auto;
+}
+
+.expat-extended-table-header {
+	padding-top: 12px;
+	padding-bottom: 12px;
+	background-color: #EFF3F8;
+	margin: 0px !important;
+}
+
+.expat-extended-table-header label {
+	font-size: 13px;
+}
+
+/*#expat-extended-table > .htContainer th > div {
+	padding: 8px;
+	line-height: 1.42857;
+}*/
+
+.expat-extended-table-header .dataTables_length select, .expat-extended-table-header .dataTables_filter input {
+	margin-bottom: 0px !important;
+	margin-top: 0px;
+	margin-right: 4px;
+	margin-left: 4px;
+}
+
+.hrmis-table-header {
+	padding-top: 12px;
+	padding-bottom: 12px;
+	background-color: #EFF3F8;
+	margin: 0px !important;
+}
+
+.hrmis-table-header label {
+	font-size: 13px;
+}
+
+.hrmis-table-header .dataTables_length select, .hrmis-table-header .dataTables_filter input {
+	margin-bottom: 0px !important;
+	margin-top: 0px;
+	margin-right: 4px;
+	margin-left: 4px;
+}
+
+.kpi-table-header {
+	padding-top: 12px;
+	padding-bottom: 12px;
+	background-color: #EFF3F8;
+	margin: 0px !important;
+}
+
+.kpi-table-header label {
+	font-size: 13px;
+}
+
+.kpi-table-header .dataTables_length select, .kpi-table-header .dataTables_filter input {
+	margin-bottom: 0px !important;
+	margin-top: 0px;
+	margin-right: 4px;
+	margin-left: 4px;
+}
+
+
+#hrmis-scoring-table-info, #kpi-scoring-table-info{
+    font-size: 12px;
+    padding: 20px 10px;
+}
+
+.sort_asc, .sort_desc {
+	/* background-color: red !important; */
+}
+
+.inactive-cell {
+	color: #F89406;
+}
+
+.unread {
+	background-color: #FCF8E3 !important;
+}
+
+.notif a {
+	white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.unread a, .list-group-item.unread {
+	font-weight: bold !important;
+}
+
+.tooltip-notifs .tooltip-inner {
+	max-width: 320px;
+    width: 320px;
+}
+
+/*.jGrowl-notification {
+	margin-top: 18%;
+}*/
+
+.jGrowl-closer {
+	background-color: #000 !important;
+	color: #fff;
+}
+
+.head-name {
+	display: inline-block;
+	width: 100%;
+	outline: 0;
+}
+
+.head-name:hover, .head-name:active, .head-name:focus {
+	outline: 0;
+}
+
+.page-green>li.active>a{
+    background-color: #2E8965;
+    border-color: #2E8965;
+    color: #ffffff;
+}
+
+.page-green>li.active>a:hover{
+    background-color: #2E8965;
+}
+
+.page-green>li>a{
+    color: #2E8965;
+}
+
+.page-grey>li.active>a{
+    background-color: #404040;
+    border-color: #404040;
+    color: #ffffff;
+}
+
+.page-grey>li.active>a:hover{
+    background-color: #404040;
+}
+
+.page-grey>li>a{
+    color: #404040;
+}
+
+.infraction-table th, .infraction-table td {
+	text-align: center;
+}
+
+.dismissed .lbl {
+	color: #A94442;
+	font-weight: bold !important;
+}
+
+.select-separator {
+	border-top: 1px solid #ccc;
+	margin-top: 1%;
+	padding-top: 1%;
+}
+
+.cite-upload-loader {
+	background-color: transparent !important;
+	color: #797979 !important;
+}
+
+.cite-upload-loader-done {
+	background-color: transparent !important;
+	color: #69aa46 !important;
+}
+
+.cite-upload-loader-done.fa-times {
+	color: #dd5a43 !important;
+}

@@ -1,0 +1,382 @@
+<?php
+
+class Violations_model extends CI_Model {
+
+	function __construct() {
+        parent::__construct();
+    }
+	
+	private function array_depth($array) {
+		$max_indentation = 1;
+
+		$array_str = print_r($array, true);
+		$lines = explode("\n", $array_str);
+
+		foreach ($lines as $line) {
+			$indentation = (strlen($line) - strlen(ltrim($line))) / 4;
+
+			if ($indentation > $max_indentation) {
+				$max_indentation = $indentation;
+			}
+		}
+
+		return ceil(($max_indentation - 1) / 2) + 1;
+	}
+	
+	public function get($id) {
+		
+		return $this->db->select('v.*, count(r.id) as rules_count, m.mb_nick as created_by_nick, m2.mb_nick as updated_by_nick')
+						->join('g4_member m', 'v.created_by = m.mb_no', 'inner')
+						->join('g4_member m2', 'v.updated_by = m2.mb_no', 'left')
+						->join('hr_violation_rules r', 'v.id = r.violation_id and r.status < 2', 'left')
+						->group_by('v.id')
+						->get_where('hr_violations v', array('v.id' => $id))
+						->row();
+
+	}
+	
+	public function getAll($type, $show_disabled = false, $user_id = 0, $year_month = 0) {
+	
+		$currdate = new DateTime(null, new DateTimeZone('Asia/Manila'));
+	
+		$t = false;
+		
+		switch($type) {
+			case 1:
+			
+				$t = 'hr_violations';
+			
+				break;
+			case 2:
+			
+				$t = 'hr_member_violations';
+			
+				break;
+		}
+		
+		if($t) {
+		
+			if($type == 1)
+				$this->db->select('v.*, isnull(r.id)');
+			elseif($type == 2)
+				$this->db->select('v.*, v2.description, m.mb_id, m.mb_fname, m.mb_lname, d.dept_name, m2.mb_nick as created_by_nick, m3.mb_nick as updated_by_nick');
+		
+			$this->db->from("$t v");
+			
+			if($type == 1)
+				$this->db
+						->join('hr_violation_rules r', 'v.id = r.violation_id and r.status < 2', 'left')
+						->group_by('v.id');
+			elseif($type == 2) {
+			
+				$this->db
+						->join('hr_violations v2', 'v.violation_id = v2.id')
+						->join('g4_member m', 'v.employee_id = m.mb_no', 'inner')
+						->join('g4_member m2', 'v.created_by = m2.mb_no', 'inner')
+						->join('g4_member m3', 'v.updated_by = m3.mb_no', 'left')
+						->join('dept d', 'm.mb_deptno = d.dept_no');
+		
+				if($user_id)
+					$this->db->where('v.employee_id', $user_id);
+				
+				if($year_month)
+					$this->db->where('extract(year_month from v.commission_date) =', $year_month);
+			}
+			
+			$this->db->where('v.status <', 2)->order_by('v.id', 'desc');
+
+			if(!$show_disabled)
+				$this->db->where('v.status', 1);
+		}
+		
+		return $t ? $this->db->get()->result() : array();
+	}
+	
+	public function getCategory($id) {
+		
+		return $this->db->select('v.*, m.mb_nick as created_by_nick, m2.mb_nick as updated_by_nick')
+						->join('g4_member m', 'v.created_by = m.mb_no', 'inner')
+						->join('g4_member m2', 'v.updated_by = m2.mb_no', 'left')
+						->get_where('hr_violation_categories v', array('v.id' => $id))
+						->row();
+	}
+	
+	public function getCategories($show_disabled = false) {
+		
+		$this->db->from('hr_violation_categories');
+		
+		if(!$show_disabled)
+			$this->db->where('active', 1);
+		
+		return $this->db->get()->result();
+	}
+	
+	public function addCategory($title, $parent_id = 0) {
+		
+		return $this->db->insert('hr_violation_categories', array(
+				'parent_id' => $parent_id,
+				'title' => $title,
+				'active' => 1,
+				'created_by' => $this->session->userdata('mb_no'),
+				'created_on' => time()
+			));
+	}
+	
+	public function updateCategory($id, $title, $parent_id, $active) {
+	
+		$data = array(
+				'updated_by' => $this->session->userdata('mb_no'),
+				'updated_on' => time()
+			);
+		
+		if($title)
+			$data['title'] = $title;
+		
+		if(is_numeric($parent_id))
+			$data['parent_id'] = $parent_id;
+		
+		if(is_numeric($active))
+			$data['active'] = $active;
+
+		return is_numeric($id) && $this->db->update('hr_violation_categories', $data, array('id' => $id));
+		
+	}
+	
+	public function add($type, $data, $details = null) {
+	
+		$ret = false;
+	
+		$currdate = new DateTime(null, new DateTimeZone('Asia/Manila'));
+		
+		$doc = null;
+		
+		switch($type) {
+			case 1:
+			
+				$d = trim($data);
+				
+				if(isset($details['vio-rule-switch']) && is_array($details['vio-rule-switch'])) {
+				
+					$cite_rules = array();
+					
+					foreach($details['vio-rule-switch'] as $i => $k)
+						$cite_rules[$k] = intval($details['vio-rules-offenses'][$i], 10);
+				}
+				else
+					$cite_rules = false;
+			
+				$ret = !is_null($data) &&
+						strlen($d) &&
+						count($details) &&
+						$this->db->insert('hr_violations', array(
+							'description' => $d,
+							'cat_id' => $details['cat_id'],
+							'kpi_matrix' => implode(',', $details['infractions']),
+							'prescriptive_period' => $details['infra-years'] . ',' . $details['infra-condition'] . (isset($details['infra-month']) ? ',' . $details['infra-month']: ''),
+							'no_dismissal' => isset($details['no-dismissal-switch']) ? 1 : 0,
+							'cite_rules' => $cite_rules ? json_encode($cite_rules) : null,
+							'status' => 1,
+							'created_date' => $currdate->format('Y-m-d H:i:s'),
+							'created_by' => $this->session->userdata('mb_no')
+						));
+			
+				break;
+			case 2:
+			
+				$doc = DateTime::createFromFormat('m-d-Y H:i', $data['doc']);
+				
+				//$doc->setTime(0, 0);
+				
+				$dup = $this->db->get_where('hr_member_violations', array(
+							'employee_id' => $data['eid'],
+							'violation_id' => $data['vid'],
+							'date(commission_date)' => $doc->format('Y-m-d')
+						))->num_rows();
+			
+				$ret = !$dup &&
+						$this->db->insert('hr_member_violations', array(
+							'employee_id' => $data['eid'],
+							'violation_id' => $data['vid'],
+							'commission_date' => $doc->format('Y-m-d H:i:s'),
+							'remarks' => strlen($data['rem']) ? $data['rem'] : null,
+							'status' => 1,
+							'created_date' => $currdate->format('Y-m-d H:i:s'),
+							'created_by' => $this->session->userdata('mb_no')
+						));
+				return $ret;
+				if($ret) {
+					
+					$rules_query = $this->db->get_where('hr_violations', array('id' => $data['vid'], 'status <' => 2));
+
+					if($rules_query->num_rows() && is_array($rules = json_decode($rules_query->row()->cite_rules, true))) {
+					
+						foreach($rules as $_id => $_oid) {
+							
+							$_vio_ids = $this->db
+												->select('mv.id')
+												->from('hr_cites_assoc ca')
+												->join('hr_member_violations mv', 'ca.member_violation_id = mv.id')
+												->where(array(
+														'mv.employee_id' => $data['eid'],
+														'mv.status <' => 2
+												))
+												->get()
+												->result();
+							
+							$vio_ids = array();
+							
+							foreach($_vio_ids as $_vio_id)
+								$vio_ids[] = $_vio_id->id;
+						
+							$where = '';
+							$repetition = 0;
+						
+							switch($_id) {
+								case 1:
+								
+									$repetition = 1;
+								
+									break;
+								case 2:
+								
+									$where = "yearweek(commission_date, 1) = yearweek('" . $doc->format('Y-m-d H:i:s') . "', 1)";
+									$repetition = 2;
+
+									break;
+								case 3:
+								
+									$where = "month(commission_date) = '" . $doc->format('m') . "' and year(commission_date) = '" . $doc->format('Y') . "'";
+									$repetition = 4;
+								
+									break;
+								case 4:
+								
+									$where = "month(commission_date) = '" . $doc->format('m') . "' and year(commission_date) = '" . $doc->format('Y') . "'";
+									$repetition = 4;
+								
+									break;
+							}
+							
+							$_table = $this->db
+											->select('id')
+											->from('hr_member_violations')
+											->where(array(
+												'employee_id' => $data['eid'],
+												'violation_id' => $data['vid']
+											));
+											
+							if(!empty($where))
+								$_table->where($where, null, false);
+							
+							if(count($vio_ids))
+								$_table->where_not_in('id', $vio_ids);
+								
+							$table = $_table->get();
+							
+							$single = $repetition == 1;
+							
+							if($table->num_rows() >= $repetition || $single) {
+							
+								$_res = $table->result_array();
+
+								$times = $single ? 1 : floor($table->num_rows() / $repetition);
+								
+								$res = $single ? array(array(array('id' => $_res[0]['id']))) : array_chunk($_res, $repetition);
+								
+								for($i = 0; $i < $times; $i++) {
+									
+									$this->db->insert('hr_cites', array(
+										'employee_id' => $data['eid'],
+										'cite_code' => '',
+										'offense_id' => $_oid,
+										'status' => 0,
+										'created_date' => $currdate->format('Y-m-d H:i:s'),
+										'created_by' => $this->session->userdata('mb_no')
+									));
+									
+									$cite_id = $this->db->insert_id();
+									
+									foreach($res[$i] as $r)
+										$this->db->insert('hr_cites_assoc', array(
+											'cite_id' => $cite_id,
+											'member_violation_id' => $r['id']
+										));
+									
+								}
+							}
+						}
+					}
+					
+				}
+				
+				if($dup)
+					$ret = -1;
+				
+				file_get_contents(site_url('employees/updateHRScorePoint/' . $data['eid'] . '/' . $doc->format('Y') . '/' . $doc->format('m')));
+			
+				break;
+		}
+		
+		return $ret;
+		
+	}
+	
+	public function update($type, $id, $data) {
+	
+		$t = null;
+		
+		switch($type) {
+			case 1:
+			
+				$t = 'hr_violations';
+				
+				if(isset($data['details'])) {
+				
+					$details = $data['details'];
+					
+					unset($data['details']);
+					
+					$data['cat_id'] = $details['cat_id'];
+					
+					if(isset($details['infractions']) && is_array($details['infractions']))
+						$data['kpi_matrix'] = implode(',', $details['infractions']);
+					
+					if(isset($details['vio-rule-switch']) && is_array($details['vio-rule-switch'])) {
+					
+						$cite_rules = array();
+						
+						foreach($details['vio-rule-switch'] as $i => $k)
+							$cite_rules[$k] = intval($details['vio-rules-offenses'][$i], 10);
+					}
+					else
+						$cite_rules = false;
+					
+					$data['prescriptive_period'] = $details['infra-years'] . ',' . $details['infra-condition'] . (isset($details['infra-month']) ? ',' . $details['infra-month']: '');
+					$data['no_dismissal'] = isset($details['no-dismissal-switch']) ? 1 : 0;
+					$data['cite_rules'] = $cite_rules ? json_encode($cite_rules) : null;
+				}
+			
+				break;
+			case 2:
+			
+				$t = 'hr_member_violations';
+			
+				break;
+		}
+		
+		$currdate = new DateTime(null, new DateTimeZone('Asia/Manila'));
+		
+		array_walk($data, function (&$v, $k) { if(is_string($v)) $v = trim($v); });
+		
+		return !is_null($t) && $this->db->update($t, array_merge($data, array(
+				'updated_date' => $currdate->format('Y-m-d H:i:s'),
+				'updated_by' => $this->session->userdata('mb_no')
+			)), array('id' => $id));
+		
+	}
+	
+	public function getMonthlyAverage() {
+		
+		return $this->db->query('select round(avg(c.a)) a from (select month(h.commission_date) as rmonth, avg(h.violation_id) a from hr_member_violations h where year(h.commission_date) = year(now()) group by rmonth) c')->row()->a;
+	}
+}
